@@ -6,7 +6,7 @@
 namespace bp = boost::process;
 
 void builder::startBuild() {
-  if (timeout_ != -1) {
+  if (timeout_==0) {
     auto timer = async::spawn([this] {
       std::cout << "Start build" << std::endl;
       std::this_thread::sleep_for(std::chrono::seconds(timeout_));
