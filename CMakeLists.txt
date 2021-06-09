@@ -26,11 +26,13 @@ string(APPEND CMAKE_CXX_FLAGS " -pedantic -Werror -Wall -Wextra")
 string(APPEND CMAKE_CXX_FLAGS " -Wno-unused-command-line-argument")
 string(APPEND CMAKE_CXX_FLAGS " -Wshadow -Wnon-virtual-dtor")
 
-hunter_add_package(Boost COMPONENTS thread program_options system filesystem)
-find_package(Boost CONFIG REQUIRED thread program_options system filesystem)
-
 hunter_add_package(GTest)
 find_package(GTest CONFIG REQUIRED)
+
+hunter_add_package(Boost COMPONENTS program_options log thread system filesystem)
+find_package(Boost CONFIG REQUIRED program_options log log_setup thread system filesystem)
+
+find_package(Threads)
 
 hunter_add_package(Async++)
 find_package(Async++ CONFIG REQUIRED)
@@ -38,12 +40,9 @@ find_package(Async++ CONFIG REQUIRED)
 add_library(${PROJECT_NAME} STATIC
         # enum your files and delete this comment
         ${CMAKE_CURRENT_SOURCE_DIR}/sources/builder.cpp
-        ${CMAKE_CURRENT_SOURCE_DIR}/include/builder.hpp
         )
 
-target_link_libraries(${PROJECT_NAME} Async++::Async++ Boost::program_options Boost::system Boost::filesystem)
-
-add_executable(builder
+add_executable(demo
         ${CMAKE_CURRENT_SOURCE_DIR}/demo/main.cpp
         )
 
@@ -52,10 +51,17 @@ target_include_directories(${PROJECT_NAME} PUBLIC
         "$<INSTALL_INTERFACE:include>"
         )
 
-target_link_libraries(builder ${PROJECT_NAME})
+target_link_libraries(demo ${PROJECT_NAME})
+target_link_libraries(${PROJECT_NAME} Boost::program_options)
+target_link_libraries(${PROJECT_NAME} ${Boost_LOG_SETUP_LIBRARY})
+target_link_libraries(${PROJECT_NAME} ${Boost_LOG_LIBRARY})
+target_link_libraries(${PROJECT_NAME} ${Boost_THREAD_LIBRARY})
+target_link_libraries(${PROJECT_NAME} ${Boost_SYSTEM_LIBRARY})
+target_link_libraries(${PROJECT_NAME} ${Boost_FILESYSTEM_LIBRARY})
+target_link_libraries(${PROJECT_NAME} pthread)
+target_link_libraries(${PROJECT_NAME} Async++::Async++)
 
-
-if (BUILD_TESTS)
+if(BUILD_TESTS)
   add_executable(tests
           # TODO: enum your files and delete this comment
           ${CMAKE_CURRENT_SOURCE_DIR}/tests/test.cpp
@@ -63,9 +69,9 @@ if (BUILD_TESTS)
   target_link_libraries(tests ${PROJECT_NAME} GTest::gtest_main)
   enable_testing()
   add_test(NAME unit_tests COMMAND tests)
-endif ()
+endif()
 
-if (BUILD_COVERAGE)
+if(BUILD_COVERAGE)
   set(ENABLE_COVERAGE ON CACHE BOOL "Enable coverage build." FORCE)
   list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/tools/coverage/cmake")
   find_package(codecov)
@@ -73,9 +79,9 @@ if (BUILD_COVERAGE)
   add_coverage(${PROJECT_NAME})
   add_coverage(tests)
   coverage_evaluate()
-endif ()
+endif()
 
-if (BUILD_DOCS)
+if(BUILD_DOCS)
   set(DOXYGEN_OUTPUT_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/_docs)
   set(DOXYGEN_EXAMPLE_PATH examples)
   set(DOXYGEN_GENERATE_HTML NO)
@@ -84,11 +90,11 @@ if (BUILD_DOCS)
   doxygen_add_docs(docs include)
   install(DIRECTORY ${DOXYGEN_OUTPUT_DIRECTORY}/man DESTINATION share)
   # add_dependencies(install docs) need to call target docs before install or package
-endif ()
+endif()
 
 include(CPackConfig.cmake)
 
-install(TARGETS ${PROJECT_NAME} builder
+install(TARGETS ${PROJECT_NAME} demo
         EXPORT "${PROJECT_NAME}-targets"
         RUNTIME DESTINATION bin
         ARCHIVE DESTINATION lib
@@ -102,3 +108,4 @@ install(EXPORT "${PROJECT_NAME}-targets"
         NAMESPACE "${PROJECT_NAME}::"
         DESTINATION "lib/cmake"
         )
+
