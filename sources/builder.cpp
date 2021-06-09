@@ -47,7 +47,7 @@ void Builder::start(const boost::program_options::variables_map& vm) {
     try{
         std::this_thread::sleep_for(std::chrono::seconds(4));
         std::shared_future<bool> pack = std::async([this, &process_info]() ->
-                                                           bool {return this->run_process(
+                bool {return this->run_process(
                 "config",
                 process_info);
         });
